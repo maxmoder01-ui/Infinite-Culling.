@@ -11,6 +11,10 @@ public class InfiniteCullingClient implements ClientModInitializer {
 
     private static Config config;
 
+    private long lastFpsUpdate = System.nanoTime();
+    private int frameCounter = 0;
+    private int currentFps = 0;
+
     @Override
     public void onInitializeClient() {
         config = Config.load();
@@ -18,6 +22,22 @@ public class InfiniteCullingClient implements ClientModInitializer {
         System.out.println("[Infinite Culling.] Initialized!");
 
         HudRenderCallback.EVENT.register(this::renderHud);
+    }
+
+    private void updateFps() {
+        frameCounter++;
+
+        long now = System.nanoTime();
+        long elapsed = now - lastFpsUpdate;
+
+        if (elapsed >= 1_000_000_000L) {
+            currentFps = (int) (
+                frameCounter * 1_000_000_000L / elapsed
+            );
+
+            frameCounter = 0;
+            lastFpsUpdate = now;
+        }
     }
 
     private void renderHud(MatrixStack matrices, float tickDelta) {
@@ -28,6 +48,8 @@ public class InfiniteCullingClient implements ClientModInitializer {
         if (client.player == null || client.options.debugEnabled) {
             return;
         }
+
+        updateFps();
 
         int x = 6;
         int y = 6;
@@ -44,10 +66,11 @@ public class InfiniteCullingClient implements ClientModInitializer {
         if (config.showFps) {
             client.textRenderer.drawWithShadow(
                 matrices,
-                new LiteralText("FPS: " + client.getCurrentFps())
+                new LiteralText("FPS: " + currentFps)
                     .formatted(Formatting.GREEN),
                 x, y, 0xFFFFFF
             );
+
             y += 10;
         }
 
